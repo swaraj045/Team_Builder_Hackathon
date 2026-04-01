@@ -1,5 +1,9 @@
 from fastapi import FastAPI
 from app.routes import transaction_routes
+from app.database.db_connection import engine
+from app.models import transaction_model, user_model
+
+transaction_model.Base.metadata.create_all(bind=engine)
 
 app = FastAPI(
     title="UPI Fraud Shield API",
