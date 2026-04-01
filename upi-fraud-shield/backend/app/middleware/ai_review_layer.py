@@ -1,20 +1,20 @@
+import time
 from app.services import fraud_detection_service
 from app.services import receiver_risk_service
 
-
 def run_ai_review(transaction):
+
+    # Simulate AI review delay
+    time.sleep(3)  # change to 10 for real demo
 
     total_risk = 0
 
-    # Behavioral risk
     behavioral_risk = fraud_detection_service.calculate_risk(transaction)
     total_risk += behavioral_risk
 
-    # Receiver intelligence risk
     receiver_data = receiver_risk_service.check_receiver(transaction["receiver"])
-    total_risk += receiver_data["risk_score"] * 0.5  # weighted influence
+    total_risk += receiver_data["risk_score"] * 0.5
 
-    # Normalize score
     if total_risk > 100:
         total_risk = 100
 
