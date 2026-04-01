@@ -1,38 +1,4 @@
-from app.services import fraud_detection_service
-
-# Simulated transaction storage
-transactions = {}
-
-def initiate_transaction(data):
-
-    transaction_id = data.get("transaction_id")
-
-    transactions[transaction_id] = {
-        "receiver": data.get("receiver"),
-        "amount": data.get("amount"),
-        "status": "INITIATED"
-    }
-
-    return {
-        "transaction_id": transaction_id,
-        "status": "INITIATED"
-    }
-
-
-def verify_pin(data):
-
-    transaction_id = data.get("transaction_id")
-
-    if transaction_id not in transactions:
-        return {"error": "Transaction not found"}
-
-    transactions[transaction_id]["status"] = "PIN_VERIFIED"
-
-    return {
-        "transaction_id": transaction_id,
-        "status": "PIN_VERIFIED"
-    }
-
+from app.middleware import ai_review_layer
 
 def ai_review(data):
 
@@ -43,23 +9,26 @@ def ai_review(data):
 
     transaction = transactions[transaction_id]
 
-    risk_score = fraud_detection_service.calculate_risk(transaction)
+    review_result = ai_review_layer.run_ai_review(transaction)
 
-    if risk_score > 60:
+    decision = review_result["decision"]
+
+    if decision == "BLOCK":
         transactions[transaction_id]["status"] = "BLOCKED"
-        result = "Transaction Blocked - High Fraud Risk"
+        message = "Transaction Blocked - High Fraud Risk"
 
-    elif risk_score > 30:
+    elif decision == "WARNING":
         transactions[transaction_id]["status"] = "WARNING"
-        result = "Suspicious Transaction - User Confirmation Required"
+        message = "Suspicious Transaction - User Confirmation Required"
 
     else:
         transactions[transaction_id]["status"] = "COMPLETED"
-        result = "Transaction Successful"
+        message = "Transaction Successful"
 
     return {
         "transaction_id": transaction_id,
-        "risk_score": risk_score,
+        "risk_score": review_result["final_risk_score"],
+        "receiver_status": review_result["receiver_status"],
         "status": transactions[transaction_id]["status"],
-        "message": result
-    } 
+        "message": message
+    }
